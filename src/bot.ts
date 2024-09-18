@@ -31,7 +31,9 @@ function bot(
    * TODO: think about cases when no direct contact is possible.
    * */
 
-  const directlyPocketables = myMen.filter((man, manIndex) => {
+  const directlyPocketables: Vector2D[] = [];
+  for (let manIndex = 0; manIndex < myMen.length; manIndex++) {
+    const man = myMen[manIndex];
     // draw two lines from the man to the pocket
     let pottableHoles: number[] = [];
     for (let holeIndex = 0; holeIndex < holesPosition.length; holeIndex++) {
@@ -112,7 +114,7 @@ function bot(
       return true;
     }
     return false;
-  });
+  }
 
   return { directlyPocketables };
 }
