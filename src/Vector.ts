@@ -19,11 +19,15 @@ class Vector2D {
     return JSON.stringify(this);
   }
 
-  draw(origin: Vector2D, col: p5.Color, scale = 1) {
+  draw(origin: Vector2D, col: p5.Color, scale?: number) {
     strokeWeight(4);
     stroke(col);
+    if (!scale) {
+      scale = this.mag();
+    }
     const scaled = Vector2D.scale(this, scale);
-    line(origin.x, origin.y, origin.x + scaled.x, origin.y + scaled.y);
+    const lineVec = Vector2D.add(scaled, origin);
+    line(origin.x, origin.y, lineVec.x, lineVec.y);
   }
 
   static zero() {

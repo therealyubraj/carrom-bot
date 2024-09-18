@@ -1,18 +1,20 @@
+// check for radius as well here
 function isInBetween(
   vec: Vector2D,
+  vecR: number,
   boundingVec1: Vector2D,
   boundingVec2: Vector2D
 ) {
-  if (vec.x > boundingVec1.x && vec.x > boundingVec2.x) {
+  if (vec.x - vecR > boundingVec1.x && vec.x - vecR > boundingVec2.x) {
     return false;
   }
-  if (vec.y > boundingVec1.y && vec.y > boundingVec2.y) {
+  if (vec.y - vecR > boundingVec1.y && vec.y - vecR > boundingVec2.y) {
     return false;
   }
-  if (vec.x < boundingVec1.x && vec.x < boundingVec2.x) {
+  if (vec.x + vecR < boundingVec1.x && vec.x + vecR < boundingVec2.x) {
     return false;
   }
-  if (vec.y < boundingVec1.y && vec.y < boundingVec2.y) {
+  if (vec.y + vecR < boundingVec1.y && vec.y + vecR < boundingVec2.y) {
     return false;
   }
 

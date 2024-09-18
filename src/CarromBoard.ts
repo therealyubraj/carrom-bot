@@ -2,19 +2,22 @@ class CarromBoard {
   blacks: Vector2D[];
   whites: Vector2D[];
   carromMenR: number;
-  striker: Vector2D;
   strikerR: number;
   holes: Vector2D[];
   holesR: number;
 
   constructor() {
-    this.blacks = [new Vector2D(300, 300)];
+    this.blacks = [
+      new Vector2D(300, 300),
+      //new Vector2D(400, 300)
+      new Vector2D(400, 300),
+    ];
     this.whites = [
-      new Vector2D(200, 200),
-      new Vector2D(100, 500),
-      new Vector2D(400, 200),
-      new Vector2D(400, 400),
-      new Vector2D(200, 400),
+      new Vector2D(300, 400),
+      //new Vector2D(100, 500),
+      //new Vector2D(400, 200),
+      //new Vector2D(400, 400),
+      //new Vector2D(200, 400),
     ];
     this.carromMenR = 20;
 
@@ -25,39 +28,31 @@ class CarromBoard {
       new Vector2D(width - this.holesR, height - this.holesR),
       new Vector2D(this.holesR, height - this.holesR),
     ];
+    this.strikerR = this.carromMenR * 1.2;
   }
 
   draw() {
-    const { directlyPocketables: directlyPocketablesBlack } = bot(
+    const baseLine = {
+      left: new Vector2D(100, 500),
+      right: new Vector2D(500, 500),
+    };
+
+    bot(
       this.whites,
       this.blacks,
       this.carromMenR,
-      this.striker,
       this.strikerR,
-      { left: new Vector2D(0, 0), right: new Vector2D(0, 0) },
+      baseLine,
       this.holes,
       this.holesR,
       "black"
     );
-    const { directlyPocketables: directlyPocketablesWhite } = bot(
-      this.whites,
-      this.blacks,
-      this.carromMenR,
-      this.striker,
-      this.strikerR,
-      { left: new Vector2D(0, 0), right: new Vector2D(0, 0) },
-      this.holes,
-      this.holesR,
-      "white"
-    );
-
-    const directlyPocketables = [
-      ...directlyPocketablesBlack,
-      ...directlyPocketablesWhite,
-    ];
 
     stroke(255);
     strokeWeight(1);
+
+    fill(255);
+    line(baseLine.left.x, baseLine.left.y, baseLine.right.x, baseLine.right.y);
 
     fill(0);
     for (const black of this.blacks) {
@@ -72,11 +67,6 @@ class CarromBoard {
     fill(144);
     for (const hole of this.holes) {
       circle(hole.x, hole.y, this.holesR * 2);
-    }
-
-    fill(0, 255, 0);
-    for (const pocketable of directlyPocketables) {
-      circle(pocketable.x, pocketable.y, this.carromMenR);
     }
   }
 }

@@ -1,21 +1,11 @@
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 var CarromBoard = (function () {
     function CarromBoard() {
-        this.blacks = [new Vector2D(300, 300)];
+        this.blacks = [
+            new Vector2D(300, 300),
+            new Vector2D(400, 300),
+        ];
         this.whites = [
-            new Vector2D(200, 200),
-            new Vector2D(100, 500),
-            new Vector2D(400, 200),
-            new Vector2D(400, 400),
-            new Vector2D(200, 400),
+            new Vector2D(300, 400),
         ];
         this.carromMenR = 20;
         this.holesR = this.carromMenR * 1.5;
@@ -25,13 +15,18 @@ var CarromBoard = (function () {
             new Vector2D(width - this.holesR, height - this.holesR),
             new Vector2D(this.holesR, height - this.holesR),
         ];
+        this.strikerR = this.carromMenR * 1.2;
     }
     CarromBoard.prototype.draw = function () {
-        var directlyPocketablesBlack = bot(this.whites, this.blacks, this.carromMenR, this.striker, this.strikerR, { left: new Vector2D(0, 0), right: new Vector2D(0, 0) }, this.holes, this.holesR, "black").directlyPocketables;
-        var directlyPocketablesWhite = bot(this.whites, this.blacks, this.carromMenR, this.striker, this.strikerR, { left: new Vector2D(0, 0), right: new Vector2D(0, 0) }, this.holes, this.holesR, "white").directlyPocketables;
-        var directlyPocketables = __spreadArray(__spreadArray([], directlyPocketablesBlack, true), directlyPocketablesWhite, true);
+        var baseLine = {
+            left: new Vector2D(100, 500),
+            right: new Vector2D(500, 500),
+        };
+        bot(this.whites, this.blacks, this.carromMenR, this.strikerR, baseLine, this.holes, this.holesR, "black");
         stroke(255);
         strokeWeight(1);
+        fill(255);
+        line(baseLine.left.x, baseLine.left.y, baseLine.right.x, baseLine.right.y);
         fill(0);
         for (var _i = 0, _a = this.blacks; _i < _a.length; _i++) {
             var black = _a[_i];
@@ -46,11 +41,6 @@ var CarromBoard = (function () {
         for (var _d = 0, _e = this.holes; _d < _e.length; _d++) {
             var hole = _e[_d];
             circle(hole.x, hole.y, this.holesR * 2);
-        }
-        fill(0, 255, 0);
-        for (var _f = 0, directlyPocketables_1 = directlyPocketables; _f < directlyPocketables_1.length; _f++) {
-            var pocketable = directlyPocketables_1[_f];
-            circle(pocketable.x, pocketable.y, this.carromMenR);
         }
     };
     return CarromBoard;
@@ -70,11 +60,14 @@ var Vector2D = (function () {
         return JSON.stringify(this);
     };
     Vector2D.prototype.draw = function (origin, col, scale) {
-        if (scale === void 0) { scale = 1; }
         strokeWeight(4);
         stroke(col);
+        if (!scale) {
+            scale = this.mag();
+        }
         var scaled = Vector2D.scale(this, scale);
-        line(origin.x, origin.y, origin.x + scaled.x, origin.y + scaled.y);
+        var lineVec = Vector2D.add(scaled, origin);
+        line(origin.x, origin.y, lineVec.x, lineVec.y);
     };
     Vector2D.zero = function () {
         return new Vector2D(0, 0);
@@ -110,13 +103,43 @@ var Vector2D = (function () {
     };
     return Vector2D;
 }());
-function bot(whites, blacks, carromMenR, strikerPosition, strikerR, baseLinePosition, holesPosition, holesR, myMenColor) {
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
+function bot(whites, blacks, carromMenR, strikerR, baseLinePosition, holesPosition, holesR, myMenColor) {
+    var strikerPosition = Vector2D.add(baseLinePosition.left, new Vector2D(strikerR, 0));
+    while (strikerPosition.x < baseLinePosition.right.x - strikerR) {
+        var res = _bot(whites, blacks, carromMenR, strikerPosition, strikerR, baseLinePosition, holesPosition, holesR, myMenColor);
+        if (res) {
+            res.vec.draw(strikerPosition, color(255, 255, 0));
+            fill(255, 0, 0);
+            stroke(255);
+            circle(strikerPosition.x, strikerPosition.y, strikerR * 2);
+            return res.vec;
+        }
+        strikerPosition.x += 5;
+    }
+    stroke(255);
+    fill(255, 0, 0);
+    var randomVec = Vector2D.scale(new Vector2D(random(-1, 1), random(-1, 1)), random(10, 30));
+    randomVec.draw(Vector2D.zero(), color(0, 0, 0), 200000);
+    return randomVec;
+}
+function _bot(whites, blacks, carromMenR, strikerPosition, strikerR, baseLinePosition, holesPosition, holesR, myMenColor) {
     var leftMostPossible = baseLinePosition.left.x + strikerR;
     var rightMostPossible = baseLinePosition.right.x - strikerR;
     var myMen = myMenColor === "white" ? whites : blacks;
     var otherMen = myMenColor === "white" ? blacks : whites;
     var allMen = __spreadArray(__spreadArray([], myMen, true), otherMen, true);
-    var directlyPocketables = myMen.filter(function (man, manIndex) {
+    var directlyPocketables = [];
+    for (var manIndex = 0; manIndex < myMen.length; manIndex++) {
+        var man = myMen[manIndex];
         var pottableHoles = [];
         for (var holeIndex = 0; holeIndex < holesPosition.length; holeIndex++) {
             var hole = holesPosition[holeIndex];
@@ -127,7 +150,7 @@ function bot(whites, blacks, carromMenR, strikerPosition, strikerR, baseLinePosi
                     continue;
                 }
                 var otherMan = allMen[otherManIndex];
-                var betweenCheck = isInBetween(otherMan, hole, man);
+                var betweenCheck = isInBetween(otherMan, carromMenR, hole, man);
                 var check1 = doesCircleIntersectLine(Vector2D.sub(otherMan, man), carromMenR * 2, directLine, carromMenR);
                 var check2 = doesCircleIntersectLine(Vector2D.sub(otherMan, man), carromMenR * 2, directLine, -carromMenR);
                 if (betweenCheck && (check1 || check2)) {
@@ -139,9 +162,12 @@ function bot(whites, blacks, carromMenR, strikerPosition, strikerR, baseLinePosi
             }
         }
         if (pottableHoles.length > 0) {
-            var closestHoleIndex = pottableHoles[0];
-            var closestDist = Vector2D.sub(holesPosition[closestHoleIndex], man).magSq();
-            for (var pottableHoleIndex = 1; pottableHoleIndex < pottableHoles.length; pottableHoleIndex++) {
+            var closestHoleIndex = -1;
+            var closestDist = Infinity;
+            for (var pottableHoleIndex = 0; pottableHoleIndex < pottableHoles.length; pottableHoleIndex++) {
+                if (!isInBetween(man, carromMenR, strikerPosition, holesPosition[pottableHoles[pottableHoleIndex]])) {
+                    continue;
+                }
                 var holeIndex = pottableHoles[pottableHoleIndex];
                 var distVec = Vector2D.sub(holesPosition[holeIndex], man);
                 var thisDist = distVec.magSq();
@@ -150,16 +176,44 @@ function bot(whites, blacks, carromMenR, strikerPosition, strikerR, baseLinePosi
                     closestHoleIndex = holeIndex;
                 }
             }
-            for (var _i = 0, pottableHoles_1 = pottableHoles; _i < pottableHoles_1.length; _i++) {
-                var holeIndex = pottableHoles_1[_i];
-                Vector2D.sub(holesPosition[holeIndex], man).draw(man, color(255, 0, 0), 20000);
+            if (closestHoleIndex === -1) {
+                continue;
             }
             Vector2D.sub(holesPosition[closestHoleIndex], man).draw(man, color(0, random(200, 255), random(0, 100)), 20000);
-            return true;
+            directlyPocketables.push({
+                hole: holesPosition[closestHoleIndex],
+                man: man,
+            });
         }
-        return false;
-    });
-    return { directlyPocketables: directlyPocketables };
+    }
+    var directlyStrikablePoints = [];
+    for (var pocketableIndex = 0; pocketableIndex < directlyPocketables.length; pocketableIndex++) {
+        var pocketable = directlyPocketables[pocketableIndex];
+        var toBeStruckPoint = Vector2D.scale(Vector2D.reverse(Vector2D.unit(new Vector2D(pocketable.hole.x - pocketable.man.x, pocketable.hole.y - pocketable.man.y))), strikerR + carromMenR);
+        var relativeToStriker = Vector2D.add(new Vector2D(pocketable.man.x - strikerPosition.x, pocketable.man.y - strikerPosition.y), toBeStruckPoint);
+        var isStrikable = true;
+        for (var otherManIndex = 0; otherManIndex < allMen.length; otherManIndex++) {
+            var otherMan = allMen[otherManIndex];
+            if (otherMan.x === pocketable.man.x && otherMan.y === pocketable.man.y) {
+                continue;
+            }
+            var check1 = doesCircleIntersectLine(Vector2D.sub(otherMan, strikerPosition), strikerR * 2, relativeToStriker, strikerR);
+            var check2 = doesCircleIntersectLine(Vector2D.sub(otherMan, strikerPosition), strikerR * 2, relativeToStriker, -strikerR);
+            var check3 = doesCircleIntersectLine(Vector2D.sub(otherMan, strikerPosition), strikerR * 2, relativeToStriker, 0);
+            if (check1 || check2 || check3) {
+                isStrikable = false;
+            }
+        }
+        if (isStrikable) {
+            directlyStrikablePoints.push(relativeToStriker);
+        }
+    }
+    if (directlyStrikablePoints.length > 0) {
+        return {
+            vec: directlyStrikablePoints[0],
+        };
+    }
+    return null;
 }
 var board;
 function setup() {
@@ -174,17 +228,17 @@ function draw() {
     background(144, 200, 255);
     board.draw();
 }
-function isInBetween(vec, boundingVec1, boundingVec2) {
-    if (vec.x > boundingVec1.x && vec.x > boundingVec2.x) {
+function isInBetween(vec, vecR, boundingVec1, boundingVec2) {
+    if (vec.x - vecR > boundingVec1.x && vec.x - vecR > boundingVec2.x) {
         return false;
     }
-    if (vec.y > boundingVec1.y && vec.y > boundingVec2.y) {
+    if (vec.y - vecR > boundingVec1.y && vec.y - vecR > boundingVec2.y) {
         return false;
     }
-    if (vec.x < boundingVec1.x && vec.x < boundingVec2.x) {
+    if (vec.x + vecR < boundingVec1.x && vec.x + vecR < boundingVec2.x) {
         return false;
     }
-    if (vec.y < boundingVec1.y && vec.y < boundingVec2.y) {
+    if (vec.y + vecR < boundingVec1.y && vec.y + vecR < boundingVec2.y) {
         return false;
     }
     return true;

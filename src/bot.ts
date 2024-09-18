@@ -2,6 +2,55 @@ function bot(
   whites: Vector2D[],
   blacks: Vector2D[],
   carromMenR: number,
+  strikerR: number,
+  baseLinePosition: { left: Vector2D; right: Vector2D },
+  holesPosition: Vector2D[],
+  holesR: number,
+  myMenColor: "white" | "black"
+) {
+  let strikerPosition = Vector2D.add(
+    baseLinePosition.left,
+    new Vector2D(strikerR, 0)
+  );
+
+  while (strikerPosition.x < baseLinePosition.right.x - strikerR) {
+    const res = _bot(
+      whites,
+      blacks,
+      carromMenR,
+      strikerPosition,
+      strikerR,
+      baseLinePosition,
+      holesPosition,
+      holesR,
+      myMenColor
+    );
+
+    if (res) {
+      res.vec.draw(strikerPosition, color(255, 255, 0));
+      fill(255, 0, 0);
+      stroke(255);
+      circle(strikerPosition.x, strikerPosition.y, strikerR * 2);
+      return res.vec;
+    }
+
+    strikerPosition.x += 5;
+  }
+
+  stroke(255);
+  fill(255, 0, 0);
+  const randomVec = Vector2D.scale(
+    new Vector2D(random(-1, 1), random(-1, 1)),
+    random(10, 30)
+  );
+
+  randomVec.draw(Vector2D.zero(), color(0, 0, 0), 200000);
+  return randomVec;
+}
+function _bot(
+  whites: Vector2D[],
+  blacks: Vector2D[],
+  carromMenR: number,
   strikerPosition: Vector2D,
   strikerR: number,
   baseLinePosition: { left: Vector2D; right: Vector2D },
@@ -31,7 +80,7 @@ function bot(
    * TODO: think about cases when no direct contact is possible.
    * */
 
-  const directlyPocketables: Vector2D[] = [];
+  const directlyPocketables: { man: Vector2D; hole: Vector2D }[] = [];
   for (let manIndex = 0; manIndex < myMen.length; manIndex++) {
     const man = myMen[manIndex];
     // draw two lines from the man to the pocket
@@ -53,7 +102,7 @@ function bot(
 
         // move the line up and down by carromMenR to get the bounding lines
         const otherMan = allMen[otherManIndex];
-        const betweenCheck = isInBetween(otherMan, hole, man);
+        const betweenCheck = isInBetween(otherMan, carromMenR, hole, man);
         const check1 = doesCircleIntersectLine(
           Vector2D.sub(otherMan, man),
           carromMenR * 2,
@@ -68,6 +117,7 @@ function bot(
         );
         if (betweenCheck && (check1 || check2)) {
           isPottable = false;
+          // break;
         }
       }
       if (isPottable) {
@@ -77,17 +127,23 @@ function bot(
 
     if (pottableHoles.length > 0) {
       // find the closest hole.
-      let closestHoleIndex = pottableHoles[0];
-      let closestDist = Vector2D.sub(
-        holesPosition[closestHoleIndex],
-        man
-      ).magSq();
-
+      let closestHoleIndex = -1;
+      let closestDist = Infinity;
       for (
-        let pottableHoleIndex = 1;
+        let pottableHoleIndex = 0;
         pottableHoleIndex < pottableHoles.length;
         pottableHoleIndex++
       ) {
+        if (
+          !isInBetween(
+            man,
+            carromMenR,
+            strikerPosition,
+            holesPosition[pottableHoles[pottableHoleIndex]]
+          )
+        ) {
+          continue;
+        }
         const holeIndex = pottableHoles[pottableHoleIndex];
         const distVec = Vector2D.sub(holesPosition[holeIndex], man);
         const thisDist = distVec.magSq();
@@ -98,12 +154,8 @@ function bot(
         }
       }
 
-      for (const holeIndex of pottableHoles) {
-        Vector2D.sub(holesPosition[holeIndex], man).draw(
-          man,
-          color(255, 0, 0),
-          20000
-        );
+      if (closestHoleIndex === -1) {
+        continue;
       }
 
       Vector2D.sub(holesPosition[closestHoleIndex], man).draw(
@@ -111,10 +163,98 @@ function bot(
         color(0, random(200, 255), random(0, 100)),
         20000
       );
-      return true;
+      directlyPocketables.push({
+        hole: holesPosition[closestHoleIndex],
+        man,
+      });
     }
-    return false;
   }
 
-  return { directlyPocketables };
+  const directlyStrikablePoints: Vector2D[] = [];
+  for (
+    let pocketableIndex = 0;
+    pocketableIndex < directlyPocketables.length;
+    pocketableIndex++
+  ) {
+    // can the striker directly reach the point which if struck the man travels towards the hole.
+    const pocketable = directlyPocketables[pocketableIndex];
+
+    // find the point which needs to be struck with relative to the man, which if struck the man will be pocketed.
+    const toBeStruckPoint = Vector2D.scale(
+      Vector2D.reverse(
+        Vector2D.unit(
+          new Vector2D(
+            pocketable.hole.x - pocketable.man.x,
+            pocketable.hole.y - pocketable.man.y
+          )
+        )
+      ),
+      strikerR + carromMenR
+    );
+
+    const relativeToStriker = Vector2D.add(
+      new Vector2D(
+        pocketable.man.x - strikerPosition.x,
+        pocketable.man.y - strikerPosition.y
+      ),
+      toBeStruckPoint
+    );
+
+    // TODO: for y interecept use trigonometric functions: cos instead of jhelli approx
+    // check if any other men will interfere with the line between striker and this point.
+    let isStrikable = true;
+    for (
+      let otherManIndex = 0;
+      otherManIndex < allMen.length;
+      otherManIndex++
+    ) {
+      const otherMan = allMen[otherManIndex];
+
+      if (otherMan.x === pocketable.man.x && otherMan.y === pocketable.man.y) {
+        continue;
+      }
+
+      //const betweenCheck = isInBetween(
+      //otherMan,
+      //carromMenR,
+      //Vector2D.add(toBeStruckPoint, pocketable.man),
+      //strikerPosition
+      //);
+      const check1 = doesCircleIntersectLine(
+        Vector2D.sub(otherMan, strikerPosition),
+        strikerR * 2,
+        relativeToStriker,
+        strikerR
+      );
+      const check2 = doesCircleIntersectLine(
+        Vector2D.sub(otherMan, strikerPosition),
+        strikerR * 2,
+        relativeToStriker,
+        -strikerR
+      );
+      const check3 = doesCircleIntersectLine(
+        Vector2D.sub(otherMan, strikerPosition),
+        strikerR * 2,
+        relativeToStriker,
+        0
+      );
+      if (check1 || check2 || check3) {
+        isStrikable = false;
+        // break;
+      }
+    }
+
+    if (isStrikable) {
+      directlyStrikablePoints.push(relativeToStriker);
+    }
+  }
+
+  if (directlyStrikablePoints.length > 0) {
+    return {
+      vec: directlyStrikablePoints[0],
+    };
+  }
+
+  // we are doomed
+  return null;
 }
