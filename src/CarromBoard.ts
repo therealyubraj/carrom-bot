@@ -1,34 +1,38 @@
 class CarromBoard {
-  blacks: Vector2D[];
-  whites: Vector2D[];
-  carromMenR: number;
-  strikerR: number;
-  holes: Vector2D[];
-  holesR: number;
+  allCarromMen: CarromMan[] = [];
+  holes: Disc[] = [];
 
   constructor() {
-    this.blacks = [
-      new Vector2D(300, 300),
-      //new Vector2D(400, 300)
-      new Vector2D(400, 300),
-    ];
-    this.whites = [
-      new Vector2D(300, 400),
-      //new Vector2D(100, 500),
-      //new Vector2D(400, 200),
-      //new Vector2D(400, 400),
-      //new Vector2D(200, 400),
-    ];
-    this.carromMenR = 20;
+    this.allCarromMen.push(
+      new CarromMan(
+        Vector2D.random(150, 450),
+        Math.random() < 0.5 ? "black" : "white"
+      ),
+      new CarromMan(
+        Vector2D.random(150, 450),
+        Math.random() < 0.5 ? "black" : "white"
+      ),
+      new CarromMan(
+        Vector2D.random(150, 450),
+        Math.random() < 0.5 ? "black" : "white"
+      ),
+      new CarromMan(
+        Vector2D.random(150, 450),
+        Math.random() < 0.5 ? "black" : "white"
+      )
+      //      new CarromMan(new Vector2D(500, 100), "black")
+    );
 
-    this.holesR = this.carromMenR * 1.5;
-    this.holes = [
-      new Vector2D(this.holesR, this.holesR),
-      new Vector2D(width - this.holesR, this.holesR),
-      new Vector2D(width - this.holesR, height - this.holesR),
-      new Vector2D(this.holesR, height - this.holesR),
-    ];
-    this.strikerR = this.carromMenR * 1.2;
+    const holeRadius = 20 * 1.75;
+    this.holes.push(
+      new Disc(new Vector2D(holeRadius, holeRadius), holeRadius),
+      new Disc(new Vector2D(width - holeRadius, holeRadius), holeRadius),
+      new Disc(
+        new Vector2D(width - holeRadius, height - holeRadius),
+        holeRadius
+      ),
+      new Disc(new Vector2D(holeRadius, height - holeRadius), holeRadius)
+    );
   }
 
   draw() {
@@ -37,36 +41,25 @@ class CarromBoard {
       right: new Vector2D(500, 500),
     };
 
-    bot(
-      this.whites,
-      this.blacks,
-      this.carromMenR,
-      this.strikerR,
-      baseLine,
-      this.holes,
-      this.holesR,
-      "black"
-    );
+    for (const hole of this.holes) {
+      hole.draw(color(155));
+    }
+
+    for (const man of this.allCarromMen) {
+      man.draw();
+    }
 
     stroke(255);
     strokeWeight(1);
-
     fill(255);
     line(baseLine.left.x, baseLine.left.y, baseLine.right.x, baseLine.right.y);
 
-    fill(0);
-    for (const black of this.blacks) {
-      circle(black.x, black.y, this.carromMenR * 2);
-    }
-
-    fill(255);
-    for (const white of this.whites) {
-      circle(white.x, white.y, this.carromMenR * 2);
-    }
-
-    fill(144);
-    for (const hole of this.holes) {
-      circle(hole.x, hole.y, this.holesR * 2);
-    }
+    bot(
+      this.allCarromMen,
+      CarromMan.RADIUS * 1.25,
+      baseLine,
+      this.holes,
+      "white"
+    );
   }
 }

@@ -1,10 +1,10 @@
-let board: CarromBoard;
+let carromBoard: CarromBoard;
+
 function setup() {
   createCanvas(600, 600);
 
-  frameRate(5);
-
-  board = new CarromBoard();
+  frameRate(3);
+  carromBoard = new CarromBoard();
 }
 
 function windowResized() {
@@ -14,5 +14,5 @@ function windowResized() {
 function draw() {
   background(144, 200, 255);
 
-  board.draw();
+  carromBoard.draw();
 }

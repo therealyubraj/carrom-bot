@@ -35,7 +35,15 @@ class Vector2D {
   }
 
   static reverse(vec: Vector2D) {
-    return new Vector2D(vec.x * -1, vec.y * -1);
+    return new Vector2D(-vec.x, -vec.y);
+  }
+
+  static abs(vec: Vector2D) {
+    return new Vector2D(Math.abs(vec.x), Math.abs(vec.y));
+  }
+
+  static normal(vec: Vector2D) {
+    return new Vector2D(-vec.y, vec.x);
   }
 
   static add(vec1: Vector2D, vec2: Vector2D) {
@@ -46,8 +54,12 @@ class Vector2D {
     return Vector2D.add(vec1, Vector2D.reverse(vec2));
   }
 
-  static mult(vec1: Vector2D, vec2: Vector2D) {
+  static dot(vec1: Vector2D, vec2: Vector2D) {
     return new Vector2D(vec1.x * vec2.x, vec1.y * vec2.y);
+  }
+
+  static scalarMult(vec1: Vector2D, factor: number) {
+    return new Vector2D(vec1.x * factor, vec1.y * factor);
   }
 
   static unit(vec: Vector2D) {
@@ -69,5 +81,9 @@ class Vector2D {
     }
 
     return vec;
+  }
+
+  static random(min: number, max: number) {
+    return new Vector2D(randomInRange(min, max), randomInRange(min, max));
   }
 }

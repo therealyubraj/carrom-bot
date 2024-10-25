@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "strict": true,
     "module": "none",
     "noImplicitAny": true,
     "outFile": "./build/build.js",
