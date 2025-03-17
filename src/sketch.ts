@@ -16,3 +16,4 @@ function draw() {
 
   carromBoard.draw();
 }
+console.log("this is new ofkros");
